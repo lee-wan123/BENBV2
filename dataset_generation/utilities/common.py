@@ -298,18 +298,18 @@ def file_under_folder(path, target_type="file", remove=[]):
 
 def read_dataset_file(dataset_name="ModelNet10"):
     if dataset_name == "ModelNet40":
-        # filename_list = glob.glob(r"./dataset/ModelNet40/test/**.off", recursive=True)
-        filename_list = glob.glob(r"./dataset/ModelNet40/train/**.off", recursive=True)
-        # filename_list = glob.glob(r"./dataset/ModelNet40/test/stool_stool_0108.off", recursive=True)
+        # filename_list = glob.glob(r"./public_dataset/ModelNet40/test/**.off", recursive=True)
+        filename_list = glob.glob(r"./public_dataset/ModelNet40/train/**.off", recursive=True)
+        # filename_list = glob.glob(r"./public_dataset/ModelNet40/test/stool_stool_0108.off", recursive=True)
     elif dataset_name == "Stanford3D":
-        # filename_list = glob.glob(r"./dataset/Stanford3D/*.obj")
-        # filename_list = glob.glob(r"./dataset/Stanford3D/dragon.obj")
-        filename_list = glob.glob(r"./dataset/Stanford3D/bunny.obj")
-        # filename_list = glob.glob(r"./dataset/Stanford3D/teapot.obj")
+        # filename_list = glob.glob(r"./public_dataset/Stanford3D/*.obj")
+        # filename_list = glob.glob(r"./public_dataset/Stanford3D/dragon.obj")
+        filename_list = glob.glob(r"./public_dataset/Stanford3D/bunny.obj")
+        # filename_list = glob.glob(r"./public_dataset/Stanford3D/teapot.obj")
     elif dataset_name == "ShapeNetV1":
-        # filename_list = glob.glob(r"./dataset/ShapeNetV1/test/*.obj", recursive=True)
-        filename_list = glob.glob(r"./dataset/ShapeNetV1/train/*.obj", recursive=True)
-        # filename_list = glob.glob(r"./dataset/ShapeNetV1/train/67ada28ebc79cc75a056f196c127ed77_model.obj")
+        # filename_list = glob.glob(r"./public_dataset/ShapeNetV1/test/*.obj", recursive=True)
+        filename_list = glob.glob(r"./public_dataset/ShapeNetV1/train/*.obj", recursive=True)
+        # filename_list = glob.glob(r"./public_dataset/ShapeNetV1/train/67ada28ebc79cc75a056f196c127ed77_model.obj")
     # filename_list.sort()
     rng = np.random.default_rng()
     rng.shuffle(filename_list)
@@ -512,15 +512,11 @@ def coverage_from_view(target_pos, camera_pos, pb_env, epc, entire_points, FILTE
     tmp_scanned_data_total = filter_grid(tmp_scanned_data_total, FILTER_THRESHOLD)
 
     # The points could be partial points or matched points depend on the MAKE_NOISE flag
-    o_res, points = cal_coverage_with_KD(
-        tmp_scanned_data_total, entire_points, dis_threshold=OVERLAP_DIS_THRESHOLD, MAKE_NOISE=MAKE_NOISE
-    )
+    o_res, points = cal_coverage_with_KD(tmp_scanned_data_total, entire_points, dis_threshold=OVERLAP_DIS_THRESHOLD, MAKE_NOISE=MAKE_NOISE)
     return o_res, points, curr_scanned_data
 
 
-def best_coverage_from_views(
-    pb_env, epc, view_candidates, cur_coverage_max, entire_points, FILTER_THRESHOLD, OVERLAP_DIS_THRESHOLD, MAKE_NOISE
-):
+def best_coverage_from_views(pb_env, epc, view_candidates, cur_coverage_max, entire_points, FILTER_THRESHOLD, OVERLAP_DIS_THRESHOLD, MAKE_NOISE):
     """
     Identify the optimal view from a set of candidate views.
     :param pb_env: PyBullet environment instance.
@@ -702,17 +698,11 @@ def tsfm_noise(points, translation_std=0.005, rotation_std=2.5):
     rotation_rad = np.deg2rad(rotation_deg)
 
     # Create rotation matrix
-    Rx = np.array(
-        [[1, 0, 0], [0, np.cos(rotation_rad[0]), -np.sin(rotation_rad[0])], [0, np.sin(rotation_rad[0]), np.cos(rotation_rad[0])]]
-    )
+    Rx = np.array([[1, 0, 0], [0, np.cos(rotation_rad[0]), -np.sin(rotation_rad[0])], [0, np.sin(rotation_rad[0]), np.cos(rotation_rad[0])]])
 
-    Ry = np.array(
-        [[np.cos(rotation_rad[1]), 0, np.sin(rotation_rad[1])], [0, 1, 0], [-np.sin(rotation_rad[1]), 0, np.cos(rotation_rad[1])]]
-    )
+    Ry = np.array([[np.cos(rotation_rad[1]), 0, np.sin(rotation_rad[1])], [0, 1, 0], [-np.sin(rotation_rad[1]), 0, np.cos(rotation_rad[1])]])
 
-    Rz = np.array(
-        [[np.cos(rotation_rad[2]), -np.sin(rotation_rad[2]), 0], [np.sin(rotation_rad[2]), np.cos(rotation_rad[2]), 0], [0, 0, 1]]
-    )
+    Rz = np.array([[np.cos(rotation_rad[2]), -np.sin(rotation_rad[2]), 0], [np.sin(rotation_rad[2]), np.cos(rotation_rad[2]), 0], [0, 0, 1]])
 
     R = Rz @ Ry @ Rx
 

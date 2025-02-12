@@ -2,11 +2,11 @@
 
 ## Public Dataset
 
-There are some public datasets under ``../dataset``, which is necessary for the project.
+There are some public datasets under ``../public_dataset``, which is necessary for the project.
 
 ## Usage
 
-We used the Pybullet to simulate the robotic scanning process where also includes the traditional NBV-selection methods such as Random boundary, random sphere, random uniform sphere, PC-NBV and SEE.
+We used the `Pybullet` to simulate the robotic scanning process where also includes the traditional NBV-selection methods such as Random boundary, random sphere, random uniform sphere, PC-NBV and SEE.
 
 To run the code, you can use the following command:
 
