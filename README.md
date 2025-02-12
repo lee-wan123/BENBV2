@@ -36,11 +36,12 @@ The version of `Pytorch 2.3.1` and `Pytorch 1.8` has been tested.
 
 ## Usage
 
-### 1. Dataset Generation (boundary-based exploration)
+### 1. Dataset Generation (also BENBV included)
 
 - Jump to `./dataset_generation` and run `python main.py`
 - Stay and run `python show_views.py` where you can select the `next-best-view` visualization.
 
-### 2. Explore-Net
+### 2. Explore-Net (BENBV-Net)
 
 - Jump to `./nbv_explore_net` and run `python train.py`
+- The details of the network will be released soon.
