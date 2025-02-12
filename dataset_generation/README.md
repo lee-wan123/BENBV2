@@ -2,7 +2,7 @@
 
 ## Public Dataset
 
-There are some public datasets under ``./public_dataset``, which is necessary for the project. 
+There are some public datasets under ``../dataset``, which is necessary for the project.
 
 ## Usage
 

@@ -1,3 +1,4 @@
+./dataset/
 dataset/test/*.txt
 dataset/**/*.zip
 dataset/**/*.h5
