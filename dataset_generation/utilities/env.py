@@ -3,6 +3,8 @@ import numpy as np
 import pybullet as p
 import open3d as o3d
 import pybullet_data
+import cv2
+import os
 
 from pathlib import Path
 
@@ -19,7 +21,7 @@ class NBVScanEnv:
         self,
         camera=None,
         vis=False,
-        camera_model_path="./dataset_generation/urdf/small_sphere.urdf",
+        camera_model_path=r"E:\BENBV\dataset_generation\urdf\small_sphere.urdf",
     ) -> None:
         self.vis = vis
         self.camera = camera
@@ -49,9 +51,14 @@ class NBVScanEnv:
         try:
             self.model_ID, self.model_pts = self.add_3D_model(filename)
             if self.model_ID == -1 and self.model_pts == None:
+                # print model_id and model_pts
+                print(f"model_id: {self.model_ID}, model_pts: {self.model_pts.shape}")
                 return False
             else:
+                # print model_id and model_pts
+                print(f"model_id: {self.model_ID}, model_pts: {self.model_pts.shape}")
                 return True
+
         except Exception as e:
             print(f"Error: {e}")
             return False
@@ -286,3 +293,62 @@ class NBVScanEnv:
 
     def close(self):
         p.disconnect(self.physicsClient)
+
+
+if __name__ == "__main__":
+    # test camera
+    camera_pos = [0.3, 0, 0.3] 
+    target_pos = [0, 0, 0]     
+    cam_up_vector = [0, 0, 1]   
+    near = 0.01                
+    far = 1.0                 
+    size = (640, 480)          
+    fov = 60                    
+    
+    camera = Camera(camera_pos, target_pos, cam_up_vector, near, far, size, fov)
+    
+    env = NBVScanEnv(camera=camera, vis=True)
+    
+    file = r"E:\BENBV\dataset_generation\open3d\stanford-bunny.obj"
+    env.load_target_model(file)
+    
+    # position list
+    camera_positions = [
+        [0.3, 0, 0.3],
+        [0, 0.3, 0.3],
+        [-0.3, 0, 0.3],
+        [0, -0.3, 0.3]
+    ]
+    
+    pos_index = 0
+    frame_count = 0
+    
+    # 主循环
+    while pos_index < len(camera_positions):    
+        # 每隔一定帧数更换相机位置
+        if frame_count % 10 == 0:
+            current_pos = camera_positions[pos_index]
+            env.update_camera_any(target_pos=[0, 0, 0], camera_pos=current_pos)
+            pos_index = (pos_index + 1) % len(camera_positions)
+            print(f"{pos_index}/d")
+            print("type of pos_index:", type(pos_index))
+            
+
+            obs = env.get_observation()
+            
+
+            if obs['depth'] is not None:
+                depth_img = obs['depth']
+                cv2.imwrite(f'./depth_{pos_index}.png', depth_img)
+                print(f"保存深度图 depth_{pos_index}.png")
+            
+            if obs['pc'] is not None:
+                o3d.io.write_point_cloud(f'./pointcloud_{pos_index}.ply', obs['pc'])
+                print(f"保存点云 pointcloud_{pos_index}.ply")
+        
+        env.step_simulation()
+        frame_count += 1
+
+
+ 
+

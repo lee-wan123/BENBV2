@@ -378,7 +378,7 @@ def scale_points(points: np.ndarray):
     return points
 
 
-def scale_mesh(mesh_data, center, k=0.20):
+def scale_mesh(mesh_data, center, k=1):
     points = np.asarray(mesh_data.vertices)
     scaler = float(np.linalg.norm(points.max(0) - points.min(0)))
     scaler = k / scaler

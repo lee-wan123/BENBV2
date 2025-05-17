@@ -1,6 +1,6 @@
-numpy
-open3d
-opencv-python
+# numpy
+# open3d
+# opencv-python
 scipy
 tqdm
 attrdict
@@ -17,4 +17,4 @@ pandas
 seaborn
 h5py
 glob2==0.5
-pybullet==3.2.5
+# pybullet==3.2.5

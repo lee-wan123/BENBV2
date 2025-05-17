@@ -415,6 +415,8 @@ if __name__ == "__main__":
             with tqdm(total=len(file_list), desc="Dataset Progress", leave=False) as dataset_bar:
                 for file_index, file_name in enumerate(file_list):
                     print(f"\n[SIM:{sim_i+1}/{SIMULATION_COUNT}, Data:{file_index+1}/{len(file_list)}]\nFilename: {file_name} ...")
+                    print("--------------------")
+                    exit()
 
                     file_path = Path(file_name)
                     stem_name = file_path.stem
