@@ -62,8 +62,8 @@ class NBVScanEnv:
         self.mesh_data.compute_vertex_normals()
         
         # Get center and scale to normalize the model
-        self.mesh_center = self.mesh_data.get_center()
-        self.mesh_data, self.mesh_scale = scale_mesh(mesh_data=self.mesh_data, center=self.mesh_center)
+        # self.mesh_center = self.mesh_data.get_center()
+        # self.mesh_data, self.mesh_scale = scale_mesh(mesh_data=self.mesh_data, center=self.mesh_center)
         
         # Dummy ID 
         model_id = 1  
@@ -130,12 +130,18 @@ class NBVScanEnv:
 
 
 if __name__ == "__main__":  
-    # test load model
+    """ test env_3d.py  by loading model """
     file =r"E:\BENBV\dataset_generation\open3d\stanford-bunny.obj"
 
-    # test camera
-    output_dir = "./output"
-    os.makedirs(output_dir, exist_ok=True)
+    # # test camera
+    # output_dir = "./output"
+    # os.makedirs(output_dir, exist_ok=True)
+    env = NBVScanEnv()
+    env.load_target_model(file)
+    env.visualize_model()
+    print(env.model_mesh)
+
+
     # Define camera positions for scanning (similar to env.py test)
     # camera_positions = [
     #     [0.3, 0, 0.3],
@@ -143,77 +149,71 @@ if __name__ == "__main__":
     #     [-0.3, 0, 0.3],
     #     [0, -0.3, 0.3]
     # ]
-    camera_positions = [
-        [0.3, 0, 0.3]
-    ]
+    # camera_positions = [
+    #     [0.3, 0, 0.3]
+    # ]
 
 
 
     # file = r"E:\BENBV\dataset_generation\open3d\train\chair_0008.off"
     # use load_target_model to load the model
+
+
+    # # Camera setup parameters
+    # camera_pos = [0.3, 0, 0.3]
+    # target_pos = [0, 0, 0]
+    # cam_up_vector = [0, 0, 1]
+    # near = 0.01
+    # far = 1.0
+    # size = (640, 480)
+    # fov = 60
+     
+    # # Initialize camera
+    # camera = Camera(camera_pos, target_pos, cam_up_vector, near, far, size, fov)
+    
+    # # Create the environment
     # env = NBVScanEnv()
-    # env.load_target_model(file)
-    # env.visualize_model()
-    # print(env.model_mesh)
+    
+    # model_id, mesh_data =  env.load_target_model(file)
+
+    # if not mesh_data :
+    #     print("Failed to load model")
+
+    
+
     # exit()
 
-    # Camera setup parameters
-    camera_pos = [0.3, 0, 0.3]
-    target_pos = [0, 0, 0]
-    cam_up_vector = [0, 0, 1]
-    near = 0.01
-    far = 1.0
-    size = (640, 480)
-    fov = 60
-     
-    # Initialize camera
-    camera = Camera(camera_pos, target_pos, cam_up_vector, near, far, size, fov)
     
-    # Create the environment
-    env = NBVScanEnv()
-    
-    model_id, mesh_data =  env.load_target_model(file)
-
-    if not mesh_data :
-        print("Failed to load model")
-
-    
-
-    exit()
-
-
-
-    
-    # Scan the model from each position
-    for i, pos in enumerate(camera_positions):
-        print(f"Capturing from position {i+1}/{len(camera_positions)}: {pos}")
+    # # Scan the model from each position
+    # for i, pos in enumerate(camera_positions):
+    #     print(f"Capturing from position {i+1}/{len(camera_positions)}: {pos}")
         
-        # Update camera pose
-        view_matrix = camera.update_pose(pos, target_pos, cam_up_vector)
+    #     # Update camera pose
+    #     view_matrix = camera.update_pose(pos, target_pos, cam_up_vector)
         
-        # Take a shot with the camera
-        # Pass the model mesh to the camera for rendering
-        rgb, depth, point_cloud, _ = camera.shot(mesh=env.model_mesh)
+    #     # Take a shot with the camera
+    #     # Pass the model mesh to the camera for rendering
+    #     rgb, depth, point_cloud, _ = camera.shot(mesh=env.model_mesh)
         
-        # Save the depth image
-        if depth is not None:
-            depth_filename = os.path.join(output_dir, f"depth_{i+1}.png")
-            cv2.imwrite(depth_filename, depth)
-            print(f"Saved depth image to {depth_filename}")
+    #     # Save the depth image
+    #     if depth is not None:
+    #         depth_filename = os.path.join(output_dir, f"depth_{i+1}.png")
+    #         cv2.imwrite(depth_filename, depth)
+    #         print(f"Saved depth image to {depth_filename}")
         
-        # Save the point cloud
-        if point_cloud is not None:
-            pc_filename = os.path.join(output_dir, f"pointcloud_{i+1}.ply")
-            o3d.io.write_point_cloud(pc_filename, point_cloud)
-            print(f"Saved point cloud to {pc_filename}")
+    #     # Save the point cloud
+    #     if point_cloud is not None:
+    #         pc_filename = os.path.join(output_dir, f"pointcloud_{i+1}.ply")
+    #         o3d.io.write_point_cloud(pc_filename, point_cloud)
+    #         print(f"Saved point cloud to {pc_filename}")
             
-            # Optionally, visualize the point cloud 
-            if i == 0:  # Just for the first viewpoint to avoid too many visualization windows
-                print(f"Visualizing point cloud from position {i+1}")
-                coordinate_frame = o3d.geometry.TriangleMesh.create_coordinate_frame(
-                    size=0.1, origin=[0, 0, 0]
-                )
-                o3d.visualization.draw_geometries([point_cloud, coordinate_frame])
+    #         # Optionally, visualize the point cloud 
+    #         if i == 0:  # Just for the first viewpoint to avoid too many visualization windows
+    #             print(f"Visualizing point cloud from position {i+1}")
+    #             coordinate_frame = o3d.geometry.TriangleMesh.create_coordinate_frame(
+    #                 size=0.1, origin=[0, 0, 0]
+    #             )
+    #             o3d.visualization.draw_geometries([point_cloud, coordinate_frame])
     
     
-    print("Scanning complete!")
+    # print("Scanning complete!")
