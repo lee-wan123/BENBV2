@@ -140,8 +140,8 @@ class Camera:
         cam_tar_np = np.array(self.cam_tar)
         cam_pos_np = np.array(self.cam_pos)
         front = cam_tar_np - cam_pos_np
-        front = front / np.linalg.norm(front)
-        print(f"front: {front}")
+        # front = front / np.linalg.norm(front)
+        # print(f"front: {front}")
         # z = front @ cam_pos_np
         # print(f"z: {z}")
 
@@ -151,28 +151,34 @@ class Camera:
         ctrl.set_front(front)
         ctrl.set_lookat(self.cam_tar)
         ctrl.set_up(self.cam_up_vector)      
+        print(ctrl.convert_to_pinhole_camera_parameters())
+        print(type(ctrl.convert_to_pinhole_camera_parameters()))
+        # exit()
         view_param = ctrl.convert_to_pinhole_camera_parameters()
         extrinsic = view_param.extrinsic
         print(f"extrinsic:\n {extrinsic}\n,type: {type(extrinsic)}")
 
         # pybullet
-        # view_matrix_bullet = p.computeViewMatrix(cam_pos, cam_tar, cam_up_vector)
-        # view_matrix_bullet = np.array(view_matrix_bullet).reshape(4, 4).T
-        # view_matrix_bullet  = np.linalg.inv(view_matrix_bullet)
-        # convert = np.array([
-        #     [-1, 0, 0, 0],
-        #     [0, -1, 0, 0], 
-        #     [0, 0, 1, 0],
-        #     [0, 0, 0, 1]
-        # ])
-        # view_matrix_bullet = convert @ view_matrix_bullet
-        # print(f"view_matrix_bullet:\n {view_matrix_bullet}\n,type: {type(view_matrix_bullet)}")
+        view_matrix_bullet = p.computeViewMatrix(cam_pos, self.cam_tar, self.cam_up_vector)
+    
+        view_matrix_bullet = np.array(view_matrix_bullet).reshape(4, 4)
+        view_matrix_bullet  = np.linalg.inv(view_matrix_bullet)
+        convert = np.array([
+            [-1, 0, 0, 0],
+            [0, -1, 0, 0], 
+            [0, 0, 1, 0],
+            [0, 0, 0, 1]
+        ])
+        view_matrix_bullet = convert @ view_matrix_bullet
+        print(f"view_matrix_bullet:\n {view_matrix_bullet}\n,type: {type(view_matrix_bullet)}")
+        # exit()
 
 
         # view_param.extrinsic =view_matrix_bullet
         # print(f"view_param.extrinsic:\n {view_param.extrinsic}\n,type: {type(view_param.extrinsic)}")
         # extrinsic = view_param.extrinsic
 
+        # return view_matrix_bullet, ctrl
         return extrinsic, ctrl
 
     def update_pose(self, cam_pos=None, cam_tar=None, cam_up_vector=None):
@@ -338,7 +344,9 @@ if __name__ == "__main__":
     input_env = env.mesh_data
 
     # center - eye(cam_pos) = front >> eye(cam_pos) = center - front
-    cam_pos= np.array([-0.02666264,  0.0949021 ,  0.00899104]) -  np.array([0, 0, -1])
+    # cam_pos= np.array([-0.02666264,  0.0949021 ,  0.00899104]) -  np.array([0, 0, -1])
+    cam_pos= np.array([0,0,0.1]) -  np.array([0, 0, -1])
+
     # print(cam_pos)
     
     camera = Camera(

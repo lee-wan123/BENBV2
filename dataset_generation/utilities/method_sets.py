@@ -6,9 +6,9 @@ This script includes all of methods used to compared with our proposed methods
 import torch
 import numpy as np
 
-from view_generation import view_generation
+from utilities.view_generation import view_generation
 
-from common import position_on_ball, unit_vector, best_coverage_from_views, compute_density_knn
+from utilities.common import position_on_ball, unit_vector, best_coverage_from_views, compute_density_knn
 
 """
 0: Ours
@@ -25,7 +25,7 @@ def ours(pb_env, pointcloud: np.ndarray, entire_points, camera_distance: float, 
     """
     method#0: our proposed method
     """
-    view_info = view_generation(pointcloud=pointcloud, camera_wd=camera_distance)
+    view_info, boundary_points = view_generation(pointcloud=pointcloud, camera_wd=camera_distance)
     if view_info is None:
         print(f"No view information")
         return None
@@ -39,7 +39,7 @@ def ours(pb_env, pointcloud: np.ndarray, entire_points, camera_distance: float, 
         OVERLAP_DIS_THRESHOLD=OVERLAP_DIS_THRESHOLD,
         MAKE_NOISE=MAKE_NOISE,
     )
-    return tmp_nbv, tmp_coverage_max, tmp_scanned_data_total, nbv_list, score_list, curr_scanned_data
+    return tmp_nbv, tmp_coverage_max, tmp_scanned_data_total, nbv_list, score_list, curr_scanned_data, boundary_points
 
 
 def random_boundary(pointcloud: np.ndarray, camera_distance: float):  # type: ignore

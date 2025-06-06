@@ -1,23 +1,29 @@
 import platform
 import sys, os
+from pathlib import Path
 
 from scipy import spatial
 
 os.chdir("../")
 print(os.getcwd())
 sys.path.insert(0, "./dataset_generation/utilities")
+current_dir = Path(__file__).parent
+sys.path.insert(0, str(current_dir / "dataset_generation"))
+print(f"Current directory: {current_dir}")
 
+
+import csv
 import torch
 import time, argparse
 import numpy as np
 from pathlib import Path
 from tqdm import tqdm
 
-from camera import Camera
-from env import NBVScanEnv
+from utilities.camera import Camera
+from utilities.env import NBVScanEnv
 
 # from view_generation import view_generation
-from common import (
+from utilities.common import (
     auto_radius,
     cal_coverage_with_KD,
     filter_grid,
@@ -34,7 +40,7 @@ from common import (
     calculate_overlap,
 )
 
-from method_sets import ours, random_boundary, random_sphere, random_uniform_sphere, PC_NBV, SEE, Ours_DL
+from utilities.method_sets import ours, random_boundary, random_sphere, random_uniform_sphere, PC_NBV, SEE, Ours_DL
 
 FILTER_SCALER = 1.0  # given the grid size, the scaler to filter
 OVERLAP_SCALER = 1.0  # given the grid size, the scaler to calculate the coverage
@@ -42,9 +48,11 @@ CAMERA_DS = 1.2  # 1.2  # the working distance of the 3D camera
 OFFSET_DS = 0.3  # the offset distance of the camera
 
 COVERAGE_DIS_THRESHOLD = 0.0020
-COVERAGE_RATIO_THRESHOLD = 1.0
+COVERAGE_RATIO_THRESHOLD = 0.951
 SCAN_COUNT_THRESHOLD = 15
-PYBULLET_VISIBLE = True
+PYBULLET_VISIBLE = False
+
+COVERAGE_THRESHOLDS = [0.50, 0.80, 0.90, 0.95]
 
 NAME_LIST = [
     "Ours",  # 0
@@ -74,6 +82,8 @@ def nbv_simulation(pb_env, target_model_filename: str, object_name: str, DL_MODE
     overlap_list = []
     frame_history, max_coverage_list = [], []
     scanned_pointsize_total, cur_coverage_max, model_pointsize = 0, 0, 1
+    threshold_results = {threshold: {'time': None, 'scans': None} 
+                        for threshold in COVERAGE_THRESHOLDS}
     start = time.time()
 
     while (
@@ -282,8 +292,8 @@ def nbv_simulation(pb_env, target_model_filename: str, object_name: str, DL_MODE
                 print(f"{NAME_LIST[USED_METHOD]} returned None (No view information). Unable to proceed with further processing.")
                 invalid_count += 1
                 break
-            tmp_nbv, tmp_coverage_max, scanned_data_total, nbv_list, score_list, curr_scanned_data = ours_res
-
+            tmp_nbv, tmp_coverage_max, scanned_data_total, nbv_list, score_list, curr_scanned_data, boundary_points = ours_res
+            print(f"Boundary points: {len(boundary_points)}")
         # print(f"size of all captured data: {tmp_scanned_data_total.shape[0]}/{model_pointsize}({100 * tmp_scanned_data_total.shape[0]/model_pointsize:.2f}%)")
         # end if
         # np.savetxt(OUTPUT_FOLDER / f"{scan_count}_curr_scanned_data.txt", curr_scanned_data)
@@ -300,12 +310,39 @@ def nbv_simulation(pb_env, target_model_filename: str, object_name: str, DL_MODE
             print(f"Coverage at {scan_count}th scan: {(100 * cur_coverage_max):.6f}%")
             print(f"Overlap at {scan_count}th scan: {(100*overlap):.6f}%")
 
-        frame_history.append((previous_data, current_view, tmp_nbv, nbv_list, score_list))
+        # previous_data - 之前累积的点云数据
+        # current_view - 当前视角
+        # tmp_nbv - 下一视角
+        # nbv_list - 下一视角列表
+        # score_list - 下一视角的分数列表
+        if USED_METHOD == 0:
+            print(f"type of previous_data: {type(previous_data)}")
+            print(f"shape of previous_data: {previous_data.shape}")
+            print(f"type of boundary_points: {type(boundary_points)}")
+            print(f"shape of boundary_points: {boundary_points.shape}")
+            # print(f"boundary_points: {len(boundary_points)}")
+            # print(f"previous_data: {previous_data}")
+            # print(f"boundary_points: {boundary_points}")
+            # exit()
+            frame_history.append((previous_data, current_view, tmp_nbv, nbv_list, score_list, boundary_points))
+        else:
+            frame_history.append((previous_data, current_view, tmp_nbv, nbv_list, score_list))
+        
         scanned_pointsize_total = scanned_data_total.shape[0]
         print(
             f"[{scan_count+1:02d}/{SCAN_COUNT_THRESHOLD}] Coverage: {(100 * cur_coverage_max):.2f}% - Scanned Points: {scanned_pointsize_total}/{model_pointsize}({100 * scanned_pointsize_total/model_pointsize:.2f}%)"
         )
         scan_count += 1
+        # time spent for the current scan
+        current_time = time.time() - start
+        print(f"Time spent for scan {scan_count}: {current_time:.2f} seconds")
+        for threshold in COVERAGE_THRESHOLDS:
+            if cur_coverage_max >= threshold and threshold_results[threshold]['time'] is None:
+                threshold_results[threshold]['time'] = current_time
+                threshold_results[threshold]['scans'] = scan_count
+                # print(f"  ✓ {threshold*100}% coverage reached in {current_time:.2f}s with {scan_count} scans")
+
+
     # end for
     time_spent = time.time() - start
     print(f"\nThe Next-Best-View Policy takes {time_spent:.2f} seconds.")
@@ -315,7 +352,7 @@ def nbv_simulation(pb_env, target_model_filename: str, object_name: str, DL_MODE
     cd = chamfer_distance(scanned_data_total[:, 0:3], model_points)
 
     pb_env.remove_target_model()
-    return max_coverage_list, time_spent, scanned_data_total, (hd, cd), frame_history, overlap_list
+    return max_coverage_list, time_spent, scanned_data_total, (hd, cd), frame_history, overlap_list, threshold_results
 
 
 def load_model(USED_METHOD):
@@ -379,6 +416,33 @@ def parse_arguments():
 
     return parser.parse_args()
 
+def save_results_to_csv(all_results, dataset_name, method_name):
+    """简单保存结果到CSV"""
+    output_file = OUTPUT_FOLDER / dataset_name / f"{method_name}_threshold_results.csv"
+    output_file.parent.mkdir(parents=True, exist_ok=True)
+    
+    with open(output_file, 'w', newline='', encoding='utf-8') as csvfile:
+        # CSV表头
+        fieldnames = ['model_name']
+        for threshold in COVERAGE_THRESHOLDS:
+            fieldnames.extend([f'{int(threshold*100)}%_time', f'{int(threshold*100)}%_scans'])
+        
+        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+        writer.writeheader()
+        
+        # 写入数据
+        for result in all_results:
+            row = {'model_name': result['model_name']}
+            
+            for threshold in COVERAGE_THRESHOLDS:
+                threshold_data = result['thresholds'][threshold]
+                row[f'{int(threshold*100)}%_time'] = threshold_data['time'] if threshold_data['time'] is not None else 'Not reached'
+                row[f'{int(threshold*100)}%_scans'] = threshold_data['scans'] if threshold_data['scans'] is not None else 'Not reached'
+            
+            writer.writerow(row)
+    
+    print(f"Results saved to: {output_file}")
+
 
 if __name__ == "__main__":
 
@@ -401,6 +465,13 @@ if __name__ == "__main__":
         fov=70,
     )
 
+    # if isinstance(camera, Camera):
+    #     print("✓ Camera 对象创建成功")
+    # else:
+    #     print("✗ Camera 对象创建失败，请检查 Camera 类的实现")
+
+    # exit()
+
     env = NBVScanEnv(camera=camera, vis=PYBULLET_VISIBLE)
 
     dataset_name = "Stanford3D"
@@ -409,14 +480,13 @@ if __name__ == "__main__":
     file_list = read_dataset_file(dataset_name=dataset_name)
     print(f"{len(file_list)} data found")
 
+    all_results = []
     average_coverage, obj_i = 0, 0
     with tqdm(total=SIMULATION_COUNT, desc="Simulation Progress") as simulation_bar:
         for sim_i in range(SIMULATION_COUNT):
             with tqdm(total=len(file_list), desc="Dataset Progress", leave=False) as dataset_bar:
                 for file_index, file_name in enumerate(file_list):
                     print(f"\n[SIM:{sim_i+1}/{SIMULATION_COUNT}, Data:{file_index+1}/{len(file_list)}]\nFilename: {file_name} ...")
-                    print("--------------------")
-                    exit()
 
                     file_path = Path(file_name)
                     stem_name = file_path.stem
@@ -441,7 +511,13 @@ if __name__ == "__main__":
                         dataset_bar.update(1)
                         continue
 
-                    coverage_list, time_spent, _, dist, frame_history, overlap_list = nbv_res
+                    coverage_list, time_spent, _, dist, frame_history, overlap_list, threshold_results = nbv_res
+
+                    all_results.append({
+                        'model_name': stem_name,
+                        'thresholds': threshold_results,
+                    })
+                    # save_results_to_csv(all_results, dataset_name, NAME_LIST[USED_METHOD])
 
                     record_filename = OUTPUT_FOLDER / dataset_name / f"{NAME_LIST[USED_METHOD]}_exp_record{noise_flag}.csv"
                     record_filename.parent.mkdir(parents=True, exist_ok=True)
@@ -449,11 +525,19 @@ if __name__ == "__main__":
                     # append_to_csv(record_filename, data)
 
                     frame_filename.parent.mkdir(parents=True, exist_ok=True)
-                    # save_frame_history(frame_history, filename=frame_filename)
+                    save_frame_history(frame_history, filename=frame_filename)
 
                     dataset_bar.update(1)
                     break
+                    #扫描两个模型后结束
+                    # if obj_i >= 2:
+                    #     break
+                    # obj_i += 1
             # end for
             simulation_bar.update(1)
             break
         # end for
+
+    if all_results:
+        save_results_to_csv(all_results, dataset_name, NAME_LIST[USED_METHOD])
+    env.close()

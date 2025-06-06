@@ -2,7 +2,6 @@ import cv2
 import pybullet as p
 import numpy as np
 import open3d as o3d
-from env_3d import *
 
 
 class Camera:
@@ -63,8 +62,6 @@ class Camera:
         )
         # cx = self.width / 2, cy = self.height / 2)
         # point_cloud = o3d.geometry.PointCloud.create_from_rgbd_image(rgbd_image, intrinsic)
-        # print(f"intrinsic_matrix:\n {intrinsic.intrinsic_matrix}\n,type: {type(intrinsic.intrinsic_matrix)}")
-        # exit()
 
         point_cloud = o3d.geometry.PointCloud.create_from_depth_image(
             o3d.geometry.Image(depth_image),
@@ -99,23 +96,3 @@ class Camera:
         _depthImage = self.depth_2_Image(depth)
         _pointcloud = self.rgb_depth_2_Pointcloud(_rgbImage, _depthImage)
         return _rgbImage, _depthImage, _pointcloud, _
-
-
-if __name__ == "__main__":
-    # test 
-    camera = Camera(
-        cam_pos=[0.3, 0, 0.3],
-        cam_tar=[0, 0, 0],
-        cam_up_vector=[0, 0, 1],
-        near=0.01,
-        far=1.0,
-        size=(640, 480),
-        fov=60,
-    )
-    print(f"projection_matrix:\n{camera.proj_matrix}")
-    print(f"view_matrix:\n{camera.view_matrix}")
-
-    rgb, depth, point_cloud, _ = camera.shot()
-    # print("RGB Image:", rgb)
-    # print("Depth Image:", depth)
-    # print("Point Cloud:", point_cloud)

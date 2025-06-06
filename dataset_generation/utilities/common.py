@@ -201,6 +201,18 @@ def save_frame_history(frame_history, filename):
             tmp = struct.pack(f"{len(score_list)}d", *score_list)  # double for this array
             outfile.write(tmp)
 
+            if len(frame) >= 6 and frame[5] is not None:
+                boundary_points = frame[5]
+                print("success")
+                # 保存boundary points的数量
+                outfile.write(struct.pack("Q", len(boundary_points)))
+                # 保存每个boundary point (x, y, z)
+                for bp in boundary_points:
+                    outfile.write(struct.pack("3d", *bp))
+            else:
+                # 如果没有boundary points，保存0作为标记
+                outfile.write(struct.pack("Q", 0))
+
     print(f"Frame history is saved to '{filename}'")
 
 
@@ -245,8 +257,33 @@ def read_frame_history(filename):
             # coverage for all next views
             score_list = struct.unpack("20d", f.read(20 * 8))
 
-            frame_history.append([points, target_pos, camera_pos, nbv_list, score_list])
+            # 尝试读取boundary_points (修复版本)
+    
+            # 读取boundary points数量
+            boundary_count_data = f.read(8)
+           
+            (boundary_count,) = struct.unpack("Q", boundary_count_data)
+            
+            # 读取boundary points数据
+            boundary_points = []
+            for i in range(boundary_count):
+                bp_data = f.read(3 * 8)  # 3个double值 (x, y, z)
+                if len(bp_data) == 24:  # 3 * 8 = 24 bytes
+                    bp = struct.unpack("3d", bp_data)
+                    boundary_points.append(bp)
+                else:
+                    # 数据不完整，跳出循环
+                    break
+            
+            boundary_points = np.array(boundary_points)
+            frame_history.append([points, target_pos, camera_pos, nbv_list, score_list, boundary_points])
+
+
+
+
+            # 读取下一帧的开始标记 - 这里是关键!
             frame_begin = f.read(8)
+    
     return frame_history
 
 
@@ -310,6 +347,10 @@ def read_dataset_file(dataset_name="ModelNet10"):
         # filename_list = glob.glob(r"./public_dataset/ShapeNetV1/test/*.obj", recursive=True)
         filename_list = glob.glob(r"./public_dataset/ShapeNetV1/train/*.obj", recursive=True)
         # filename_list = glob.glob(r"./public_dataset/ShapeNetV1/train/67ada28ebc79cc75a056f196c127ed77_model.obj")
+    elif dataset_name == "ModelNet10":
+        filename_list = glob.glob(r"./ModelNet10/*/test/*.off", recursive=True)
+        # print(f"Found {len(filename_list)} .off files in ModelNet10")   
+
     # filename_list.sort()
     rng = np.random.default_rng()
     rng.shuffle(filename_list)
@@ -378,7 +419,7 @@ def scale_points(points: np.ndarray):
     return points
 
 
-def scale_mesh(mesh_data, center, k=1):
+def scale_mesh(mesh_data, center, k=0.20):
     points = np.asarray(mesh_data.vertices)
     scaler = float(np.linalg.norm(points.max(0) - points.min(0)))
     scaler = k / scaler

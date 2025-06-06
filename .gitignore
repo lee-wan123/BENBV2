@@ -28,7 +28,7 @@ dataset_generation/*.ply
 dataset_generation/*.png
 dataset_generation/open3d/
 archive.zip
-
+ModelNet10
 
 */tmp.py
 tmp.txt
