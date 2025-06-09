@@ -33,7 +33,7 @@ def select_menu():
 
 if __name__ == "__main__":
     # filename_user = select_menu()
-    filename_user = "E:/note_2025/BENBV-main/dataset_generation/output/Stanford3D/frame_history/bunny_frame_history_Ours.bin"
+    filename_user = r"E:\BENBV\dataset_generation\output\Stanford3D\frame_history\bunny_frame_history_Ours.bin"
     if filename_user == -1:
         print(f"No file found! Please check {OUTPUT_FOLDER}")
         exit()
